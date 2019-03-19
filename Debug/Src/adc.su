@@ -1,0 +1,4 @@
+stm32f4xx_ll_bus.h:427:22:LL_AHB1_GRP1_EnableClock	8	static
+stm32f4xx_ll_adc.h:3186:22:LL_ADC_SetChannelSamplingTime.constprop	8	static
+adc.c:58:6:MX_ADC1_Init	96	static
+adc.c:109:6:MX_ADC2_Init	80	static

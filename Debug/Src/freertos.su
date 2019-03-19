@@ -1,0 +1,3 @@
+freertos.c:150:6:StartDefaultTask	8	static
+freertos.c:171:6:StartReadCAN	40	static
+freertos.c:106:6:MX_FREERTOS_Init	80	static
