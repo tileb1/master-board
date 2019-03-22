@@ -1,0 +1,9 @@
+tiny_ekf.c:92:13:zeros	0	static
+tiny_ekf.c:115:13:mulmat	36	static
+tiny_ekf.c:138:13:transpose	24	static
+tiny_ekf.c:149:13:accum	20	static
+tiny_ekf.c:268:13:unpack	16	static
+tiny_ekf.c:192:6:mat_exp	72	static
+tiny_ekf.c:207:6:updateP	672	static
+tiny_ekf.c:312:6:ekf_init	88	static
+tiny_ekf.c:333:5:ekf_step	160	static

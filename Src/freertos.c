@@ -61,6 +61,9 @@
 #include "led.h"
 extern CAN_HandleTypeDef hcan1;
 extern void TK_state_machine(void const * argument);
+extern float IMUb[6];
+extern float zdata[4];
+int IMU_avail = 0;
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -83,6 +86,8 @@ extern void TK_state_machine(void const * argument);
 IMU_data IMU_buffer[CIRC_BUFFER_SIZE] CCMRAM;
 BARO_data BARO_buffer[CIRC_BUFFER_SIZE] CCMRAM;
 osThreadId state_machineHandle;
+osThreadId kalman_handle;
+extern void TK_kalman(void const * argument);
 /* USER CODE END Variables */
 osThreadId defaultTaskHandle;
 osThreadId readCANHandle;
@@ -133,6 +138,10 @@ void MX_FREERTOS_Init(void) {
   /* definition and creation of state_machine */
   osThreadDef(state_machine, TK_state_machine, osPriorityHigh, 0, 1024);
   state_machineHandle = osThreadCreate(osThread(state_machine), NULL);
+
+  /* definition and creation of kalman */
+  osThreadDef(kalman, TK_kalman, osPriorityHigh, 0, 1024);
+  kalman_handle = osThreadCreate(osThread(kalman), NULL);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
@@ -194,28 +203,33 @@ void StartReadCAN(void const * argument)
 					new_baro_data = &BARO_buffer[(currentBaroSeqNumber + 1) % CIRC_BUFFER_SIZE];
 					new_imu_data = &IMU_buffer[(currentImuSeqNumber + 1) % CIRC_BUFFER_SIZE];
 					new_baro_data->altitude = current_msg.data;
+					zdata[0] = current_msg.data;
 				}
+				//IMUb[] acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z //zdata gps_x, gps_y, gps_z, alt
 				if (current_msg.id == DATA_ID_ACCELERATION_X) {
 					new_imu_data->acceleration.x = current_msg.data;
+					IMUb[0] = current_msg.data;
 				}
 				if (current_msg.id == DATA_ID_ACCELERATION_Y) {
 					new_imu_data->acceleration.y = current_msg.data;
+					IMUb[1] = current_msg.data;
 				}
 				if (current_msg.id == DATA_ID_ACCELERATION_Z) {
 					new_imu_data->acceleration.y = current_msg.data;
+					IMUb[2] = current_msg.data;
 				}
 				if (current_msg.id == DATA_ID_GYRO_X) {
 					new_imu_data->gyro_rps.x = current_msg.data;
+					IMUb[3] = current_msg.data;
 				}
 				if (current_msg.id == DATA_ID_GYRO_Y) {
 					new_imu_data->gyro_rps.y = current_msg.data;
+					IMUb[4] = current_msg.data;
 				}
 				if (current_msg.id == DATA_ID_GYRO_Z) {
 					new_imu_data->gyro_rps.z = current_msg.data;
-					//setFrame(255, 255, 255);
-					//----------------------------------------------------
-					// Call Loic's function
-					//----------------------------------------------------
+					IMUb[5] = current_msg.data;
+					IMU_avail = 1;
 				    currentBaroSeqNumber++;
 				    currentImuSeqNumber++;
 				}
