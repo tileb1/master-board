@@ -1,5 +1,0 @@
-led.c:5:6:led_set_rgb	0	static
-led.c:11:6:led_set_r	0	static
-led.c:15:6:led_set_g	0	static
-led.c:19:6:led_set_b	0	static
-led.c:23:6:led_init	0	static

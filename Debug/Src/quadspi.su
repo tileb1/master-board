@@ -1,3 +1,0 @@
-quadspi.c:60:6:MX_QUADSPI_Init	8	static
-quadspi.c:79:6:HAL_QSPI_MspInit	56	static
-quadspi.c:126:6:HAL_QSPI_MspDeInit	8	static
