@@ -133,7 +133,7 @@ int main(void)
   MX_DMA_Init();
   MX_ADC1_Init();
   MX_ADC2_Init();
-//  MX_CAN1_Init();
+  MX_CAN1_Init();
   MX_I2C3_Init();
   MX_QUADSPI_Init();
   MX_SDIO_SD_Init();

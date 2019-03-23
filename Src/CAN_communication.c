@@ -118,7 +118,12 @@ uint32_t readFrame(void) {
 	uint32_t fill_level = HAL_CAN_GetRxFifoFillLevel(&hcan1, CAN_RX_FIFO0);
 	if (fill_level > 0) {
 		HAL_CAN_GetRxMessage(&hcan1, CAN_RX_FIFO0, &RxHeader, RxData);
-		memcpy(&current_msg.data, RxData, 4);
+        current_msg.data = 0;
+        current_msg.data += (uint32_t) RxData[0] << 24;
+        current_msg.data += (uint32_t) RxData[1] << 16;
+        current_msg.data += (uint32_t) RxData[2] << 8;
+		current_msg.data += (uint32_t) RxData[3] << 0;
+
 		current_msg.id = RxData[4];
 		//----------------------------------------------------------------------check if works
 		uint8_t* ptr = (uint8_t*) &current_msg.timestamp;

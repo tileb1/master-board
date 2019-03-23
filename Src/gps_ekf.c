@@ -27,11 +27,12 @@
 #include "tinyekf_config.h"
 #include "tiny_ekf.h"
 #include "cmsis_os.h"
+#include "CAN_communication.h"
 
 float IMUb[6];
 float zdata[4];
 
-extern int IMU_avail;
+extern volatile int IMU_avail;
 
 // positioning interval
 //static const float T = 1;
@@ -322,6 +323,14 @@ void TK_kalman() {
 //        fprintf(ofp,"%f, %f, %f, %f, %f, %f\n", ekf.x[0], ekf.x[1], ekf.x[2],ekf.x[3], ekf.x[4], ekf.x[5]);
 			//printf("%f, %f, %f, %f, %f, %f\n", ekf.x[0], ekf.x[1], ekf.x[2],ekf.x[3], ekf.x[4], ekf.x[5]);
 			//printf("%f, %f, %f, %f, %f, %f, %f, %f, %f, %f \n", IMUb[0], IMUb[1],IMUb[2],IMUb[3],IMUb[4],IMUb[5],zdata[0],zdata[1],zdata[2],zdata[3]);
+
+			//send estimate to the CAN
+			setFrame((int32_t) (1000 * ekf.x[0]), DATA_EKF_0, HAL_GetTick());
+			setFrame((int32_t) (1000 * ekf.x[1]), DATA_EKF_1, HAL_GetTick());
+			setFrame((int32_t) (1000 * ekf.x[2]), DATA_EKF_2, HAL_GetTick());
+			setFrame((int32_t) (1000 * ekf.x[3]), DATA_EKF_3, HAL_GetTick());
+			setFrame((int32_t) (1000 * ekf.x[4]), DATA_EKF_4, HAL_GetTick());
+			setFrame((int32_t) (1000 * ekf.x[5]), DATA_EKF_5, HAL_GetTick());
 		}
 		else {
 			osDelay(10);
