@@ -207,7 +207,7 @@ void TK_kalman() {
 	//float Pos_KF[25][3];
 	// true
 	float F11[9][9];
-	float dt = 0.02;
+	float dt = 0.1; // fix at 10 Hz
 	double sp, sr, sy, cp, cr, cy;
 	int isGPSHere = 5;
 
@@ -300,11 +300,17 @@ void TK_kalman() {
 
 			if (isGPSHere >= 5) { // go for the kalman
 				ekf_step(&ekf, zdata);
+				ekf.x[6] = 0; // force orientation pointing up
+				ekf.x[7] = 0;
+				ekf.x[8] = 0;
 				isGPSHere = 0;
 			} else { //simple INS
-				ekf.x[6] += IMUm[3] * dt;
-				ekf.x[7] += IMUm[4] * dt;
-				ekf.x[8] += IMUm[5] * dt;
+				//ekf.x[6] += IMUm[3] * dt;
+				//ekf.x[7] += IMUm[4] * dt;
+				//ekf.x[8] += IMUm[5] * dt;
+				ekf.x[6] = 0; // force orientation pointing up
+				ekf.x[7] = 0;
+				ekf.x[8] = 0;
 				ekf.x[3] += IMUm[0] * dt;
 				ekf.x[4] += IMUm[1] * dt;
 				ekf.x[5] += IMUm[2] * dt;
@@ -313,7 +319,7 @@ void TK_kalman() {
 				ekf.x[2] += ekf.x[5] * dt;
 				updateP(ekf.P, ekf.F, ekf.Q);
 
-				//isGPSHere++;
+				isGPSHere++;
 			}
 
 			// grab positions, ignoring velocities

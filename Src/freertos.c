@@ -55,15 +55,18 @@
 #include "cmsis_os.h"
 
 /* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
+/* USER CODE BEGIN Includes */     
+#include <math.h>
+
 #include "CAN_communication.h"
 #include "Misc/Common.h"
+#include "Misc/rocket_constants.h"
 #include "led.h"
 extern CAN_HandleTypeDef hcan1;
 extern void TK_state_machine(void const * argument);
 extern float IMUb[6];
 extern float zdata[4];
-int IMU_avail = 0;
+volatile int IMU_avail = 0;
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -94,7 +97,10 @@ osThreadId readCANHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
-   
+inline float altitudeFromPressure(float pressure_hPa)
+{
+	return 44330 * (1.0 - pow (pressure_hPa / ADJUSTED_SEA_LEVEL_PRESSURE, 0.1903));
+}
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void const * argument);
@@ -185,6 +191,7 @@ void StartReadCAN(void const * argument)
 	IMU_data* new_imu_data = 0;
 	uint32_t timestamp = HAL_GetTick();
 	uint32_t a = HAL_GetTick();
+	uint32_t last_imu_meas = HAL_GetTick();
 	uint8_t oldState = currentState;
 	while (1) {
 		// Send the state of the rocket
@@ -202,34 +209,43 @@ void StartReadCAN(void const * argument)
 				if (current_msg.id == DATA_ID_ALTITUDE) {
 					new_baro_data = &BARO_buffer[(currentBaroSeqNumber + 1) % CIRC_BUFFER_SIZE];
 					new_imu_data = &IMU_buffer[(currentImuSeqNumber + 1) % CIRC_BUFFER_SIZE];
-					new_baro_data->altitude = current_msg.data;
-					zdata[0] = current_msg.data;
+					new_baro_data->pressure = ((float32_t) ((int32_t) current_msg.data)) / 100; // convert from Pa to hPa
+					new_baro_data->altitude = altitudeFromPressure(new_baro_data->pressure);
+					zdata[3] = new_baro_data->altitude;
+
+					// mock gps estimate
+					zdata[0] = 0;
+					zdata[1] = 0;
+					zdata[2] = zdata[3];
 				}
 				//IMUb[] acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z //zdata gps_x, gps_y, gps_z, alt
-				if (current_msg.id == DATA_ID_ACCELERATION_X) {
-					new_imu_data->acceleration.x = current_msg.data;
-					IMUb[0] = current_msg.data;
+				else if (current_msg.id == DATA_ID_ACCELERATION_X) {
+					new_imu_data->acceleration.x = ((float32_t) ((int32_t) current_msg.data)) / 1000 * 9.81; // convert from m-g to g to m/s;
+					IMUb[0] = new_imu_data->acceleration.x;
 				}
-				if (current_msg.id == DATA_ID_ACCELERATION_Y) {
-					new_imu_data->acceleration.y = current_msg.data;
-					IMUb[1] = current_msg.data;
+				else if (current_msg.id == DATA_ID_ACCELERATION_Y) {
+					new_imu_data->acceleration.y = ((float32_t) ((int32_t) current_msg.data)) / 1000 * 9.81; // convert from m-g to g to m/s;
+					IMUb[1] = new_imu_data->acceleration.y;
 				}
-				if (current_msg.id == DATA_ID_ACCELERATION_Z) {
-					new_imu_data->acceleration.y = current_msg.data;
-					IMUb[2] = current_msg.data;
+				else if (current_msg.id == DATA_ID_ACCELERATION_Z) {
+					new_imu_data->acceleration.z = ((float32_t) ((int32_t) current_msg.data)) / 1000 * 9.81; // convert from m-g to g to m/s;
+					IMUb[2] = new_imu_data->acceleration.z;
 				}
-				if (current_msg.id == DATA_ID_GYRO_X) {
+				else if (current_msg.id == DATA_ID_GYRO_X) {
 					new_imu_data->gyro_rps.x = current_msg.data;
-					IMUb[3] = current_msg.data;
+					IMUb[3] = 0*current_msg.data; // discard gyro
 				}
-				if (current_msg.id == DATA_ID_GYRO_Y) {
+				else if (current_msg.id == DATA_ID_GYRO_Y) {
 					new_imu_data->gyro_rps.y = current_msg.data;
-					IMUb[4] = current_msg.data;
+					IMUb[4] = 0*current_msg.data; // discard gyro
 				}
-				if (current_msg.id == DATA_ID_GYRO_Z) {
+				else if (current_msg.id == DATA_ID_GYRO_Z) {
 					new_imu_data->gyro_rps.z = current_msg.data;
-					IMUb[5] = current_msg.data;
-					IMU_avail = 1;
+					IMUb[5] = 0*current_msg.data; // discard gyro
+					if (HAL_GetTick() - last_imu_meas > 100) { // 10 Hz update
+						IMU_avail = 1; // assume gyro is the last data
+						last_imu_meas = HAL_GetTick();
+					}
 				    currentBaroSeqNumber++;
 				    currentImuSeqNumber++;
 				}
