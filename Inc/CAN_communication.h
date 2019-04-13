@@ -35,6 +35,13 @@ CAN_msg				  current_msg;
 #define DATA_ID_GYRO_Y 5
 #define DATA_ID_GYRO_Z 6
 
+#define DATA_EKF_0 10
+#define DATA_EKF_1 11
+#define DATA_EKF_2 12
+#define DATA_EKF_3 13
+#define DATA_EKF_4 14
+#define DATA_EKF_5 15
+
 // Define all the board ID's (lower means higher priority for CAN protocol)
 #define ID_MASTER 0
 #define ID_GPS_SENSOR 3

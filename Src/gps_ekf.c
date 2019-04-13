@@ -27,11 +27,12 @@
 #include "tinyekf_config.h"
 #include "tiny_ekf.h"
 #include "cmsis_os.h"
+#include "CAN_communication.h"
 
 float IMUb[6];
 float zdata[4];
 
-extern int IMU_avail;
+extern volatile int IMU_avail;
 
 // positioning interval
 //static const float T = 1;
@@ -285,12 +286,6 @@ void TK_kalman() {
 
 			mat_exp(F11, ekf.F, 9); //2nd order taylor, exact since F11^3 = 0
 
-			//fill H
-			ekf.H[0][0] = 1;
-			ekf.H[1][1] = 1;
-			ekf.H[2][2] = 1;
-			ekf.H[3][2] = 1;
-
 			//fill hx
 			ekf.hx[0] = ekf.fx[0];
 			ekf.hx[1] = ekf.fx[1];
@@ -298,20 +293,20 @@ void TK_kalman() {
 			ekf.hx[3] = ekf.fx[2];
 
 			if (isGPSHere >= 5) { // go for the kalman
+				//fill H
+				ekf.H[0][0] = 1;
+				ekf.H[1][1] = 1;
+				ekf.H[2][2] = 1;
+				ekf.H[3][2] = 1;
 				ekf_step(&ekf, zdata);
 				isGPSHere = 0;
 			} else { //simple INS
-				ekf.x[6] += IMUm[3] * dt;
-				ekf.x[7] += IMUm[4] * dt;
-				ekf.x[8] += IMUm[5] * dt;
-				ekf.x[3] += IMUm[0] * dt;
-				ekf.x[4] += IMUm[1] * dt;
-				ekf.x[5] += IMUm[2] * dt;
-				ekf.x[0] += ekf.x[3] * dt;
-				ekf.x[1] += ekf.x[4] * dt;
-				ekf.x[2] += ekf.x[5] * dt;
-				updateP(ekf.P, ekf.F, ekf.Q);
-
+				//fill H
+				ekf.H[0][0] = 0;
+				ekf.H[1][1] = 0;
+				ekf.H[2][2] = 0;
+				ekf.H[3][2] = 1;
+				ekf_step(&ekf, zdata);
 				//isGPSHere++;
 			}
 
@@ -322,6 +317,13 @@ void TK_kalman() {
 //        fprintf(ofp,"%f, %f, %f, %f, %f, %f\n", ekf.x[0], ekf.x[1], ekf.x[2],ekf.x[3], ekf.x[4], ekf.x[5]);
 			//printf("%f, %f, %f, %f, %f, %f\n", ekf.x[0], ekf.x[1], ekf.x[2],ekf.x[3], ekf.x[4], ekf.x[5]);
 			//printf("%f, %f, %f, %f, %f, %f, %f, %f, %f, %f \n", IMUb[0], IMUb[1],IMUb[2],IMUb[3],IMUb[4],IMUb[5],zdata[0],zdata[1],zdata[2],zdata[3]);
+			//send estimate to the CAN
+			setFrame((int32_t) (1000 * ekf.x[0]), DATA_EKF_0, HAL_GetTick());
+			setFrame((int32_t) (1000 * ekf.x[1]), DATA_EKF_1, HAL_GetTick());
+			setFrame((int32_t) (1000 * ekf.x[2]), DATA_EKF_2, HAL_GetTick());
+			setFrame((int32_t) (1000 * ekf.x[3]), DATA_EKF_3, HAL_GetTick());
+			setFrame((int32_t) (1000 * ekf.x[4]), DATA_EKF_4, HAL_GetTick());
+			setFrame((int32_t) (1000 * ekf.x[5]), DATA_EKF_5, HAL_GetTick());
 		}
 		else {
 			osDelay(10);

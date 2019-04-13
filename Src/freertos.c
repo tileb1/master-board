@@ -63,7 +63,7 @@ extern CAN_HandleTypeDef hcan1;
 extern void TK_state_machine(void const * argument);
 extern float IMUb[6];
 extern float zdata[4];
-int IMU_avail = 0;
+volatile int IMU_avail = 0;
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -166,7 +166,7 @@ void StartDefaultTask(void const * argument)
   for(;;)
   {
     osDelay(1);
-  }
+  };
   /* USER CODE END StartDefaultTask */
 }
 
@@ -188,6 +188,7 @@ void StartReadCAN(void const * argument)
 	uint8_t oldState = currentState;
 	while (1) {
 		// Send the state of the rocket
+		osDelay(5);
 		a = HAL_GetTick();
 		if (a - timestamp > 2000) {
 			setFrame(0, currentState, a);
@@ -203,7 +204,10 @@ void StartReadCAN(void const * argument)
 					new_baro_data = &BARO_buffer[(currentBaroSeqNumber + 1) % CIRC_BUFFER_SIZE];
 					new_imu_data = &IMU_buffer[(currentImuSeqNumber + 1) % CIRC_BUFFER_SIZE];
 					new_baro_data->altitude = current_msg.data;
-					zdata[0] = current_msg.data;
+					zdata[3] = current_msg.data;
+					zdata[2] = current_msg.data;
+					zdata[1] = 0;
+					zdata[0] = 0;
 				}
 				//IMUb[] acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z //zdata gps_x, gps_y, gps_z, alt
 				if (current_msg.id == DATA_ID_ACCELERATION_X) {
@@ -227,6 +231,7 @@ void StartReadCAN(void const * argument)
 					IMUb[4] = current_msg.data;
 				}
 				if (current_msg.id == DATA_ID_GYRO_Z) {
+					led_set_rgb(1000, 0, 0);
 					new_imu_data->gyro_rps.z = current_msg.data;
 					IMUb[5] = current_msg.data;
 					IMU_avail = 1;
