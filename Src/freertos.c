@@ -172,7 +172,7 @@ void StartDefaultTask(void const * argument)
   for(;;)
   {
     osDelay(1);
-  }
+  };
   /* USER CODE END StartDefaultTask */
 }
 
@@ -195,6 +195,7 @@ void StartReadCAN(void const * argument)
 	uint8_t oldState = currentState;
 	while (1) {
 		// Send the state of the rocket
+		osDelay(5);
 		a = HAL_GetTick();
 		if (a - timestamp > 2000) {
 			setFrame(0, currentState, a);

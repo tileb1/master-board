@@ -286,12 +286,6 @@ void TK_kalman() {
 
 			mat_exp(F11, ekf.F, 9); //2nd order taylor, exact since F11^3 = 0
 
-			//fill H
-			ekf.H[0][0] = 1;
-			ekf.H[1][1] = 1;
-			ekf.H[2][2] = 1;
-			ekf.H[3][2] = 1;
-
 			//fill hx
 			ekf.hx[0] = ekf.fx[0];
 			ekf.hx[1] = ekf.fx[1];
@@ -299,27 +293,24 @@ void TK_kalman() {
 			ekf.hx[3] = ekf.fx[2];
 
 			if (isGPSHere >= 5) { // go for the kalman
+				//fill H
+				ekf.H[0][0] = 1;
+				ekf.H[1][1] = 1;
+				ekf.H[2][2] = 1;
+				ekf.H[3][2] = 1;
 				ekf_step(&ekf, zdata);
 				ekf.x[6] = 0; // force orientation pointing up
 				ekf.x[7] = 0;
 				ekf.x[8] = 0;
 				isGPSHere = 0;
 			} else { //simple INS
-				//ekf.x[6] += IMUm[3] * dt;
-				//ekf.x[7] += IMUm[4] * dt;
-				//ekf.x[8] += IMUm[5] * dt;
-				ekf.x[6] = 0; // force orientation pointing up
-				ekf.x[7] = 0;
-				ekf.x[8] = 0;
-				ekf.x[3] += IMUm[0] * dt;
-				ekf.x[4] += IMUm[1] * dt;
-				ekf.x[5] += IMUm[2] * dt;
-				ekf.x[0] += ekf.x[3] * dt;
-				ekf.x[1] += ekf.x[4] * dt;
-				ekf.x[2] += ekf.x[5] * dt;
-				updateP(ekf.P, ekf.F, ekf.Q);
-
-				isGPSHere++;
+				//fill H
+				ekf.H[0][0] = 0;
+				ekf.H[1][1] = 0;
+				ekf.H[2][2] = 0;
+				ekf.H[3][2] = 1;
+				ekf_step(&ekf, zdata);
+				//isGPSHere++;
 			}
 
 			// grab positions, ignoring velocities
